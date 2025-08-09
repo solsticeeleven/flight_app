@@ -22,6 +22,8 @@ class App:
         self.notebook.add(self.flights, text="View Reservations")
         self.get_reservations(self.flights)
 
+        self.edit_tab = tk.Frame(self.notebook)
+
     def create_reservation_form(self, parent):
         tk.Label(parent, text="Flight Reservation Form", font=("Arial", 16)).grid(row=0, column=0, columnspan=2, pady=10)
         tk.Label(parent, text="Name:").grid(row=1, column=0, sticky=tk.W, padx=10, pady=5)
@@ -48,35 +50,43 @@ class App:
         self.reserve_button.grid(row=6, column=0, columnspan=2, pady=10)
 
     def reserve(self):
-        name = self.name_entry.get()
-        flight_number = self.flight_num_entry.get()
-        destination = self.destination_entry.get()
-        seat_number = self.seat_num_entry.get()
-        date = self.date_entry.get()
-        if not all([name, flight_number, destination, date, seat_number]):
-            messagebox.showerror("Input Error", "Please fill in all fields.")
-            return
+        booking.reserve(self.fetch())
+        self.get_reservations(self.flights)
+    
+    def create_edit_form(self, parent, data):
+        tk.Label(parent, text="Edit Flight Reservation", font=("Arial", 16)).grid(row=0, column=0, columnspan=2, pady=10)
 
-        try:
-            date = datetime.strptime(date, '%Y-%m-%d').date()
-        except ValueError:
-            messagebox.showerror("Input Error", "Incorrect date format, should be YYYY-MM-DD.")
-            return
-        
+        tk.Label(parent, text="Name:").grid(row=1, column=0, sticky=tk.W, padx=10, pady=5)
+        self.edit_name_entry = tk.Entry(parent)
+        self.edit_name_entry.insert(0, data[1])
+        self.edit_name_entry.grid(row=1, column=1, padx=10, pady=5)
 
+        tk.Label(parent, text="Flight Number:").grid(row=2, column=0, sticky=tk.W, padx=10, pady=5)
+        self.edit_flight_num_entry = tk.Entry(parent)
+        self.edit_flight_num_entry.insert(0, data[2])
+        self.edit_flight_num_entry.grid(row=2, column=1, padx=10, pady=5)
 
-        messagebox.showinfo("Reservation Successful", f"Flight reserved successfully!\n\n"
-                                                      f"Name: {name}\n"
-                                                      f"Flight Number: {flight_number}\n"
-                                                      f"Destination: {destination}\n"
-                                                      f"Date: {date}\n"
-                                                      f"Seat Number: {seat_number}")
-        
-        booking.reserve(booking.register_data(name, flight_number, destination, date, seat_number))
+        tk.Label(parent, text="Destination:").grid(row=3, column=0, sticky=tk.W, padx=10, pady=5)
+        self.edit_destination_entry = tk.Entry(parent)
+        self.edit_destination_entry.insert(0, data[3])
+        self.edit_destination_entry.grid(row=3, column=1, padx=10, pady=5)
+
+        tk.Label(parent, text="Date (YYYY-MM-DD):").grid(row=4, column=0, sticky=tk.W, padx=10, pady=5)
+        self.edit_date_entry = tk.Entry(parent)
+        self.edit_date_entry.insert(0, data[4])
+        self.edit_date_entry.grid(row=4, column=1, padx=10, pady=5)
+
+        tk.Label(parent, text="Seat Number:").grid(row=5, column=0, sticky=tk.W, padx=10, pady=5)
+        self.edit_seat_num_entry = tk.Entry(parent)
+        self.edit_seat_num_entry.insert(0, data[5])
+        self.edit_seat_num_entry.grid(row=5, column=1, padx=10, pady=5)
+
+        self.update_button = tk.Button(parent, text="Update", command=lambda:self.edit_reservation(data))
+        self.update_button.grid(row=6, column=0, columnspan=2, pady=10)
 
     def get_reservations(self, parent):
         for widget in parent.winfo_children():
-            widget.destroy()  # Clear previous widgets
+            widget.destroy()
 
         tk.Label(parent, text="Flight Reservations", font=("Arial", 16)).pack(pady=10)
 
@@ -96,7 +106,7 @@ class App:
             self.tree.insert("", "end", values=r)
 
         menu = tk.Menu(self.root, tearoff=0)
-        menu.add_command(label="Edit", command=self.edit_reservation)
+        menu.add_command(label="Edit", command=self.edit_button)
         menu.add_command(label="Delete", command=self.delete_reservation)
 
         def on_right_click(event):
@@ -107,12 +117,15 @@ class App:
 
         self.tree.bind("<Button-3>", on_right_click)
 
-    def edit_reservation(self):
+    def edit_button(self):
         selected = self.tree.selection()
         if not selected:
             return
         values = self.tree.item(selected[0], "values")
-        messagebox.showinfo("Edit", f"Edit reservation: {values}")
+        self.selected = values[0]
+        self.create_edit_form(self.edit_tab, values)
+        self.notebook.add(self.edit_tab, text="Edit Reservation")
+        self.notebook.select(self.edit_tab)
 
     def delete_reservation(self):
         selected = self.tree.selection()
@@ -120,5 +133,46 @@ class App:
             return
         values = self.tree.item(selected[0], "values")
         database.delete_data(values[0])
-        messagebox.showinfo("Delete", f"Delete reservation: {values}")
         self.tree.delete(selected[0])
+        messagebox.showinfo("Delete", f"Delete reservation: {values}")
+
+    def edit_reservation(self, data):
+        self.notebook.forget(self.edit_tab)
+        database.update_data(self.fetch(True), self.selected)
+        self.get_reservations(self.flights)
+
+    def fetch(self, edit=False):
+        if edit:
+            new_name = self.edit_name_entry.get()
+            new_flight_number = self.edit_flight_num_entry.get()
+            new_destination = self.edit_destination_entry.get()
+            new_seat_number = self.edit_seat_num_entry.get()
+            new_date = self.edit_date_entry.get()
+        else:
+            new_name = self.name_entry.get()
+            new_flight_number = self.flight_num_entry.get()
+            new_destination = self.destination_entry.get()
+            new_seat_number = self.seat_num_entry.get()
+            new_date = self.date_entry.get()
+        if not all([new_name, new_flight_number, new_destination, new_date, new_seat_number]):
+            messagebox.showerror("Input Error", "Please fill in all fields.")
+            return
+
+        try:
+            new_date = datetime.strptime(new_date, '%Y-%m-%d').date()
+        except ValueError:
+            messagebox.showerror("Input Error", "Incorrect date format, should be YYYY-MM-DD.")
+            return
+        
+        if edit:
+            messagebox.showinfo("Update Successful", "Successfully updated the reservation!")
+        else:
+            messagebox.showinfo("Reservation Successful", "Successfully booked a flight!")
+
+        return booking.Data(
+            name=new_name,
+            flightNum=new_flight_number,
+            destination=new_destination,
+            seatNum=new_seat_number,
+            date=new_date
+        )

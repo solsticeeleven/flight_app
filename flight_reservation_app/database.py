@@ -1,7 +1,7 @@
 import sqlite3
 
 def connect_db():
-    conn = sqlite3.connect('flight_reservations.db')
+    conn = sqlite3.connect(r"C:\Users\Maham\Documents\Code\python\flight_reservation_app\flight_reservations.db")
     return conn
 
 def create_table():
@@ -39,6 +39,8 @@ def fetch_all_reservations():
     return rows
 
 def update_data(data, id):
+    if not id:
+        id = data[0]
     conn = connect_db()
     cursor = conn.cursor()
     cursor.execute('''
