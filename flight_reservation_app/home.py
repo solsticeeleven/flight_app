@@ -3,6 +3,8 @@ from datetime import datetime
 from tkinter import ttk, messagebox
 import booking
 import database
+import reservations
+import edit_reservations
 
 class App:
     def __init__(self, root):
@@ -14,6 +16,10 @@ class App:
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(expand=1, fill='both')
 
+        self.home = tk.Frame(self.notebook)
+        self.notebook.add(self.home, text="Home")
+        self.create_home_content(self.home)
+
         self.reservation_frame = tk.Frame(self.notebook)
         self.notebook.add(self.reservation_frame, text="Book a flight")
         self.create_reservation_form(self.reservation_frame)
@@ -23,6 +29,14 @@ class App:
         self.get_reservations(self.flights)
 
         self.edit_tab = tk.Frame(self.notebook)
+
+    def create_home_content(self, parent):
+        tk.Label(parent, text="Welcome to the Flight Reservation", font=("Arial", 16)).pack(pady=20)
+        self.book_button = tk.Button(parent, text="Book a Flight", command=lambda: self.notebook.select(self.reservation_frame))
+        self.book_button.pack(pady=10)
+
+        self.view_button = tk.Button(parent, text="View Reservations", command=lambda: self.notebook.select(self.flights))
+        self.view_button.pack(pady=10)
 
     def create_reservation_form(self, parent):
         tk.Label(parent, text="Flight Reservation Form", font=("Arial", 16)).grid(row=0, column=0, columnspan=2, pady=10)
@@ -97,12 +111,12 @@ class App:
             self.tree.column(col, width=100)
         self.tree.pack(expand=1, fill='both', padx=10, pady=10)
 
-        reservations = booking.database.fetch_all_reservations()
-        if not reservations:
+        reservations_list = reservations.fetch_all_reservations()
+        if not reservations_list:
             tk.Label(parent, text="No reservations found.").pack()
             return
 
-        for r in reservations:
+        for r in reservations_list:
             self.tree.insert("", "end", values=r)
 
         menu = tk.Menu(self.root, tearoff=0)
@@ -138,7 +152,7 @@ class App:
 
     def edit_reservation(self, data):
         self.notebook.forget(self.edit_tab)
-        database.update_data(self.fetch(True), self.selected)
+        edit_reservations.update_data(self.fetch(True), self.selected)
         self.get_reservations(self.flights)
 
     def fetch(self, edit=False):

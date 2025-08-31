@@ -1,0 +1,4 @@
+sqllite3
+datetime
+tkniter
+pyinstaller

@@ -20,6 +20,16 @@ class Data:
         if seatNum:
             self.seatNum = seatNum
 
+def insert_data(data):
+    conn = database.connect_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO reservations (name, flightNum, destination, date, seatNum)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (data.name, data.flightNum, data.destination, data.date, data.seatNum))
+    conn.commit()
+    conn.close()
+
 def reserve(data: dict):
     if data:
-        database.insert_data(data)
+        insert_data(data)
